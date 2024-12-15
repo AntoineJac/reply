@@ -1,0 +1,49 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger: none
+
+variables:
+  KONG_URL: $(KONG_URL)
+
+jobs:
+- job: deployCustomerApi
+  pool:
+    vmImage: 'ubuntu-latest'
+  steps:
+  - checkout: self
+  - task: UseNode@1
+    inputs:
+      version: '16'
+  - script: |
+      curl -sL https://github.com/kong/deck/releases/download/v1.40.2/deck_1.40.2_linux_amd64.tar.gz -o deck.tar.gz
+      tar -xf deck.tar.gz -C /tmp
+      sudo cp /tmp/deck /usr/local/bin/
+    displayName: 'Install Deck'
+  
+  - script: |
+      for folder in services/*; do
+        jq --slurpfile servers "$folder/servers.json" '.servers = $servers[0]' "$folder/swagger.json" > "$folder/oas.json"
+        deck file openapi2kong -o "$folder/swagger.yaml" -s "$folder/oas.json"
+
+        SERVICE_NAME=$(yq e '.services[].name' "$folder/swagger.yaml")
+        echo "##vso[task.setvariable variable=SERVICE_NAME;]$SERVICE_NAME"
+        
+        for yamlfile in "$folder/plugins"/*.yaml; do
+          deck file patch -s "$yamlfile" -o "$yamlfile" --selector '$..plugins[*]' --value "service: \"$SERVICE_NAME\""
+        done
+      done
+    displayName: 'Convert API Specification to Kong file'
+
+  - script: |
+      echo "> Starting deck Sync on Kong"
+      deck gateway sync -s services/*/plugins/*.yaml -s services/*/swagger.yaml --konnect-addr $(KONG_URL) --konnect-token $(KONG_TOKEN)
+
+      if [ "$?" -ne 0 ]; then
+        echo "> Error during deck sync"
+        exit 1
+      fi
+    displayName: 'Sync API to Gateway'
+

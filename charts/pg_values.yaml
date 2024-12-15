@@ -1,0 +1,25 @@
+## PostgreSQL bitnami chart
+## ref: https://github.com/bitnami/bitnami-docker-postgresql/
+
+## PostgreSQL user (has superuser privileges if username is `postgres`)
+# postgresqlUsername: postgres
+
+## PostgreSQL password
+# postgresqlPassword: kong
+
+## Create a database
+# postgresqlDatabase: kong
+
+image:
+ tag: 15.4.0
+auth:
+  postgresPassword: "kong"
+  username: "kong"
+  password: "kong"
+  database: "kong"
+
+volumePermissions:
+  enabled: true
+
+persistence:
+  enabled: true

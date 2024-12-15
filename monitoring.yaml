@@ -1,0 +1,410 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: kong-dp-monitoring
+  namespace: dp
+  labels:
+    app: kong-dp-monitoring
+spec:
+  selector:
+    app.kubernetes.io/name: kong
+  type: ClusterIP
+  ports:
+  - name: metrics
+    protocol: TCP
+    port: 8100
+    targetPort: 8100
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: kong-dp-monitoring-statsd
+  namespace: dp
+  labels:
+    app: kong-dp-monitoring
+spec:
+  selector:
+    app.kubernetes.io/name: prometheus-statsd-exporter
+  type: ClusterIP
+  ports:
+  - name: metrics
+    protocol: TCP
+    port: 8100
+    targetPort: 9102
+
+---
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kong-prometheus
+  namespace: dp
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: prometheus
+rules:
+- apiGroups: [""]
+  resources:
+  - nodes
+  - nodes/metrics
+  - services
+  - endpoints
+  - pods
+  verbs: ["get", "list", "watch"]
+- apiGroups: [""]
+  resources:
+  - configmaps
+  verbs: ["get"]
+- apiGroups:
+  - networking.k8s.io
+  resources:
+  - ingresses
+  verbs: ["get", "list", "watch"]
+- nonResourceURLs: ["/metrics"]
+  verbs: ["get"]
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: prometheus
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: prometheus
+subjects:
+- kind: ServiceAccount
+  name: kong-prometheus
+  namespace: dp
+
+---
+
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: kong-dp-service-monitor
+  namespace: dp
+  labels:
+    release: dp
+spec:
+  namespaceSelector:
+    any: true
+  endpoints:
+  - port: metrics
+    metricRelabelings:
+    - sourceLabels: [exported_service]
+      targetLabel: service
+      action: replace
+  selector:
+    matchLabels:
+      app: kong-dp-monitoring
+
+---
+
+apiVersion: monitoring.coreos.com/v1
+kind: Prometheus
+metadata:
+  name: kong-dp-prometheus
+  namespace: dp
+spec:
+  retention: 30d
+  serviceAccountName: kong-prometheus
+  serviceMonitorSelector:
+    matchLabels:
+      release: dp
+  resources:
+    requests:
+      memory: 400Mi
+  enableAdminAPI: true
+  alerting:
+    alertmanagers:
+    - namespace: mt
+      name: alertmanager-operated
+      port: web
+  ruleSelector:
+    matchLabels:
+      role: alert-rules
+      prometheus: example-alertmanager-dp
+
+---
+
+apiVersion: jaegertracing.io/v1
+kind: Jaeger
+metadata:
+  name: jaeger
+  namespace: mt
+spec:
+  query:
+    serviceType: LoadBalancer
+
+---
+
+apiVersion: monitoring.coreos.com/v1alpha1
+kind: AlertmanagerConfig
+metadata:
+  name: example-config-alertmanager
+  namespace: mt
+  labels:
+    alertmanagerConfig: webhook
+spec:
+  route:
+    groupBy: ['namespace']
+    groupWait: 30s
+    groupInterval: 5m
+    repeatInterval: 12h
+    receiver: "default"
+    routes:
+    - receiver: "webhookantoine"
+      matchers:
+      - name: namespace
+        value: dp
+      - name: severity
+        matchType: "=~"
+        value: "warning|critical"
+      continue: true
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 12h
+    - receiver: "nodeantoine"
+      matchers:
+      - name: namespace
+        value: mt
+      continue: true
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 12h
+  receivers:
+  - name: 'webhookantoine'
+    webhookConfigs:
+    - url: 'http://webhook.site/7d3dc302-a136-4dad-bd70-f927a5f6e7e8'
+      sendResolved: true
+  - name: 'nodeantoine'
+    webhookConfigs:
+    - url: 'http://webhook.site/7d3dc302-a136-4dad-bd70-f927a5f6e7e8'
+      sendResolved: true
+  - name: 'default'
+
+---
+
+apiVersion: v1
+kind: Secret
+type: Opaque
+metadata:
+  namespace: mt
+  name: webhook-config
+data:
+  apiSecret: cGFzc3dvcmQK
+
+---
+
+apiVersion: monitoring.coreos.com/v1
+kind: Alertmanager
+metadata:
+  namespace: mt
+  name: example-alertmanager
+spec:
+  replicas: 1
+  alertmanagerConfigMatcherStrategy:
+    type: "None"
+  alertmanagerConfigSelector:
+    matchLabels:
+      alertmanagerConfig: webhook
+
+---
+
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  namespace: dp
+  creationTimestamp: null
+  labels:
+    prometheus: example-alertmanager-dp
+    role: alert-rules
+  name: prometheus-example-rules
+spec:
+  groups:
+    - name: kong
+      rules:
+        - alert: kong_requestsTooHigh
+          expr: sum(last_over_time(kong_http_requests_total[30d])) by (namespace) > 200
+          for: 1m
+          labels:
+            severity: critical
+          annotations:
+            summary: Kongs too high number of request
+            description: 90% of allowed monthy
+
+        - alert: kong_latencyTooHigh
+          expr: histogram_quantile(0.1, sum(rate(kong_request_latency_ms_bucket[1m])) by (exported_service, route, pod, namespace, le)) > 100
+          for: 1m
+          labels:
+            severity: critical
+          annotations:
+            summary: Kongs total latency is more than 100ms, may suggest a performance bottleneck
+            description: 90% of calls take longer than 100ms in last minute
+
+        - alert: kong_latencyTooHigh
+          expr: histogram_quantile(0.1, sum(rate(kong_upstream_latency_ms_bucket[1m])) by (exported_service, route, pod, namespace, le)) > 80
+          for: 1m
+          labels:
+            severity: warning
+          annotations:
+            summary: Upstream latency is more than 80ms, may suggest a performance bottleneck
+            description: 90% of upstream responses take longer than 80ms in last minute
+
+        - alert: kong_latencyTooHigh
+          expr: histogram_quantile(0.1, sum(rate(kong_kong_latency_ms_bucket[1m])) by (exported_service, route, pod, namespace, le)) > 20
+          for: 1m
+          labels:
+            severity: warning
+          annotations:
+            summary: Kongs instance latency is more than 20ms, may suggest a performance bottleneck
+            description: 90% of Kong processes take longer than 20ms in last minute
+
+        - alert: kong_httpErrorCountTooHigh
+          expr: sum(rate(kong_http_requests_total{code=~"5.."}[1m])) by (route, exported_service, pod, namespace) / sum(rate(kong_http_requests_total{}[1m])) by (route, exported_service, pod, namespace) * 100 > 5
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: Kongs has to many 5xx requests
+            description: number of 5xx requests responding is over 5%
+
+        - alert: kong_httpNon2xxCountTooHigh
+          expr: sum(rate(kong_http_requests_total{code!~"2..|5.."}[1m])) by (route, exported_service, consumer, namespace) / sum(rate(kong_http_requests_total{}[1m])) by (route, exported_service, consumer, namespace) * 100 > 5 
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: Kongs has to many no 2xx|5xx requests
+            description: number of request responding with other than 2xx response is over 5%
+
+        - alert: kong_tooManyRequests
+          expr: sum(rate(kong_http_requests_total[5m])) by (namespace) > sum(rate(kong_http_requests_total[6h])) by (namespace) * 1.2
+          for: 5m
+          labels:
+            severity: info
+          annotations:
+            summary: May indicate rate limits will be breached soon if a natural spike, or a DDOS or someone security scanning a system
+            description: ">20% higher baseline"
+
+        - alert: kong_tooFewRequests
+          expr: sum(rate(kong_http_requests_total[5m])) by (namespace) < sum(rate(kong_http_requests_total[6h])) by (namespace) * 0.8
+          for: 5m
+          labels:
+            severity: info
+          annotations:
+            summary: May indicate a problem downstream in reaching your platform
+            description: <20% lower than baseline
+
+        - alert: kong_datastoreNotReachable
+          expr: sum(kong_datastore_reachable) by (namespace, pod) != 1
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: Kong has no connectivity to the database service
+            description: Kong has no connectivity to the database service
+
+        - alert: kong_shareDictLimit
+          expr: sum(kong_memory_lua_shared_dict_bytes) by (namespace, node, pod, shared_dict) / sum(kong_memory_lua_shared_dict_total_bytes) by (namespace, node, pod, shared_dict) > 50
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: Kong share dictionnay limit will be reach soon for at least one dictionnary
+            description: Kong has reached 50% of dictionnary total size
+
+        - alert: kong_licenseExpireSoon
+          expr: sum(kong_enterprise_license_expiration) by (namespace, pod) < time() + 86400
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: Kong license is expiring soon
+            description: Kong license is expiring in less than 24 hours
+
+        - alert: kong_licenseExpireSoon
+          expr: kong_data_plane_cluster_cert_expiry_timestamp < time() + 86400
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: Cluster certificate is expiring soon
+            description: Cluster certificate is expiring in less than 24 hours
+
+---
+
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  namespace: mt
+  creationTimestamp: null
+  labels:
+    release: prometheus
+  name: prometheus-example-node-rules
+spec:
+  groups:
+    - name: node
+      rules:
+        - alert: node_cpuUsageTooHigh
+          expr: ((count(count(node_cpu_seconds_total) by (cpu, instance)) by (instance) - avg(sum by (mode, instance)(irate(node_cpu_seconds_total{mode='idle'}[5m]))) by (instance)) * 100) / count(count(node_cpu_seconds_total) by (cpu, instance)) by (instance) > 70
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: CPU utilisation has risen above 70% for a greater period than 5 minutes
+            description: CPU 70%
+
+        - alert: node_memoryUsageTooHigh
+          expr: 100 - ((node_memory_MemAvailable_bytes{} * 100) / node_memory_MemTotal_bytes{}) > 70
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: Memory of the node has risen above 70% for a greater period than 5 minutes
+            description: Memory 70%
+
+        - alert: node_diskReadRateTooHigh
+          expr: sum by (instance) (irate(node_disk_read_bytes_total[5m])) / 1024 / 1024 > (1.5 * sum by (instance) (rate(node_disk_read_bytes_total[6h])) / 1024 / 1024)
+          for: 30m
+          labels:
+            severity: warning
+          annotations:
+            summary: disk i/o may indicate back pressure on the logs if writing to file
+            description: Disk Read 150%
+
+        - alert: node_diskWriteRateTooHigh
+          expr: sum by (instance) (irate(node_disk_written_bytes_total[5m])) / 1024 / 1024 > (1.5 * sum by (instance) (rate(node_disk_written_bytes_total[6h])) / 1024 / 1024)
+          for: 30m
+          labels:
+            severity: warning
+          annotations:
+            summary: disk i/o may indicate back pressure on the logs if writing to file
+            description: Disk Write 150%
+
+        - alert: node_filesystemAlmostFull
+          expr: (node_filesystem_avail_bytes{fstype!=""} / node_filesystem_size_bytes{fstype!=""} * 100 < 30 and node_filesystem_readonly{fstype!=""} == 0)
+          for: 30m
+          labels:
+            severity: warning
+          annotations:
+            summary: Kong is running out of disk space
+            description: Filesystem < 30%
+
+        - alert: node_entropyTooLow
+          expr: node_entropy_available_bits < 300
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: Kong is handling TLS traffic and there is no good source of random numbers
+            description: Node entropy too low
+

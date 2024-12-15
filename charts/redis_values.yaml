@@ -1,0 +1,29 @@
+image:
+   repository: bitnami/redis
+   tag: 6.2.6
+   pullPolicy: IfNotPresent
+
+architecture: standalone
+
+auth:
+  password: "password1"
+
+volumePermissions:
+  enabled: true
+
+replica:
+  replicaCount: 1
+  livenessProbe:
+    enabled: true
+    initialDelaySeconds: 20
+    periodSeconds: 5
+    timeoutSeconds: 5
+    successThreshold: 1
+    failureThreshold: 5
+  readinessProbe:
+    enabled: true
+    initialDelaySeconds: 20
+    periodSeconds: 5
+    timeoutSeconds: 1
+    successThreshold: 1
+    failureThreshold: 5

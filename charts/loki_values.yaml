@@ -1,0 +1,11 @@
+# Enable Loki with persistence volume
+loki:
+  enabled: true
+  isDefault: false
+persistence:
+  enabled: true
+  size: 1Gi
+promtail:
+  enabled: false
+grafana:
+  enabled: false

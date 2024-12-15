@@ -1,0 +1,8 @@
+{
+    "cookie_samesite": "off",
+    "cookie_domain": "localhost",
+    "storage": "kong",
+    "cookie_secure": false,
+    "cookie_name": "portal_session",
+    "secret": "password"
+}

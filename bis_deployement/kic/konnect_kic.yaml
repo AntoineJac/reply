@@ -1,0 +1,149 @@
+# Kong for Kubernetes with Kong Enterprise with Enterprise features enabled and
+# exposed via TLS-enabled Ingresses. Before installing:
+# * Several settings (search for the string "CHANGEME") require user-provided
+#   Secrets. These Secrets must be created before installation.
+# * Ingresses reference example "<service>.kong.CHANGEME.example" hostnames. These must
+#   be changed to an actual hostname that resolve to your proxy.
+# * Ensure that your session configurations create cookies that are usable
+#   across your services. The admin session configuration must create cookies
+#   that are sent to both the admin API and Kong Manager, and any Dev Portal
+#   instances with authentication must create cookies that are sent to both
+#   the Portal and Portal API.
+
+image:
+  repository: kong/kong-gateway
+  tag: "3.1"
+
+env:
+  prefix: /kong_prefix/
+  database: postgres
+  role: control_plane
+  admin_api_uri: http://localhost:7001
+  lua_ssl_trusted_certificate: /etc/secrets/kong-cp-cert/tls.crt
+  lua_ssl_verify_depth: 2
+  vitals: on
+  portal_auto_approve: on
+  cluster_mtls: "pki"
+  cluster_cert: /etc/secrets/kong-cp-cert/tls.crt
+  cluster_cert_key: /etc/secrets/kong-cp-cert/tls.key
+  cluster_ca_cert: /etc/secrets/kong-cp-cert/ca.crt
+
+admin:
+  enabled: true
+  type: LoadBalancer
+
+  http:
+    enabled: true
+    servicePort: 7001
+    containerPort: 8001
+    parameters: []
+
+  tls:
+    enabled: true
+    servicePort: 7444
+    containerPort: 8444
+    parameters:
+    - http2
+    - ssl
+
+  ingress:
+    enabled: false
+
+cluster:
+  enabled: true
+  annotations: {}
+  tls:
+    enabled: true
+    servicePort: 7005
+    containerPort: 8005
+    parameters: []
+  type: ClusterIP
+  externalIPs: []
+
+secretVolumes:
+  - kong-cp-cert
+  # - kong-ca-cert
+  # - kong-ssl-cert
+
+clustertelemetry:
+  enabled: true
+  tls:
+    enabled: true
+    servicePort: 7006
+    containerPort: 8006
+    parameters: []
+  type: ClusterIP
+  externalIPs: []
+
+proxy:
+  enabled: false
+
+enterprise:
+  enabled: true
+  # CHANGEME: https://github.com/Kong/charts/blob/main/charts/kong/README.md#kong-enterprise-license
+  license_secret: kong-enterprise-license
+  vitals:
+    enabled: true
+  portal:
+    enabled: true
+  rbac:
+    enabled: false
+
+manager:
+  enabled: true
+  type: LoadBalancer
+
+  http:
+    enabled: true
+    servicePort: 7002
+    containerPort: 8002
+    parameters: []
+
+  tls:
+    enabled: true
+    servicePort: 7445
+    containerPort: 8445
+    parameters:
+    - http2
+    - ssl
+
+  ingress:
+    enabled: false
+    # hostname: manager.local.lan
+    # annotations: 
+    #   kubernetes.io/ingress.class: kong
+    #   konghq.com/protocols: https
+    # tls:
+    #   kong-ssl-cert
+
+portal:
+  enabled: false
+
+portalapi:
+  enabled: false
+
+postgresql:
+  enabled: true
+  auth:
+    postgresPassword: "kong"
+    username: "kong"
+    password: "kong"
+    database: "kong"
+
+  volumePermissions:
+    enabled: true
+
+  persistence:
+    enabled: true
+
+ingressController:
+  enabled: true
+  env:
+    publish_service: kong/kongdp-kong-proxy
+
+# only if pod not enough to initiate
+readinessProbe:
+  initialDelaySeconds: 60
+
+livenessProbe:
+  initialDelaySeconds: 60

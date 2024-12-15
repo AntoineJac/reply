@@ -1,0 +1,38 @@
+{
+    "session_cookie_domain": "localhost",
+    "consumer_by": [
+        "username",
+        "custom_id",
+        "id"
+    ],
+    "client_secret": [
+        "jBbbo02IbC8P4-GRiaG6M_xmVwLJQECYghcITMbZ"
+    ],
+    "ssl_verify": false,
+    "logout_query_arg": "logout",
+    "issuer": "https://trial-7519371.okta.com/oauth2/default/.well-known/oauth-authorization-server",
+    "leeway": 100,
+    "login_redirect_mode": "query",
+    "scopes": [
+        "openid",
+        "profile",
+        "email",
+        "offline_access"
+    ],
+    "login_action": "redirect",
+    "logout_methods": [
+        "GET"
+    ],
+    "login_redirect_uri": [
+        "http://localhost:8003/default"
+    ],
+    "client_id": [
+        "0oa3uk92qnCAg612k697"
+    ],
+    "consumer_claim": [
+        "email"
+    ],
+    "redirect_uri": [
+        "http://localhost:8004/default/auth"
+    ]
+}

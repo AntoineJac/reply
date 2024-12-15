@@ -1,0 +1,30 @@
+{
+    "issuer": "https://trial-1116640.okta.com/oauth2/default/.well-known/oauth-authorization-server",
+    "admin_claim": "email",
+    "client_id": [
+      "0oam65xbdqe2om5p8697"
+    ],
+    "client_secret": [
+      "4IVB_Iq7OShLiCEf5t-Xa67d_V4WKgamE1zgO_CJLSoljUmaWwsWQNPLJrbYLPbf"
+    ],
+    "ssl_verify": false,
+    "leeway": 60,
+    "redirect_uri": [
+      "http://localhost:8002"
+    ],
+    "login_redirect_uri": [
+      "http://localhost:8002"
+    ],
+    "authenticated_groups_claim": [
+      "groups"
+    ],
+    "admin_auto_create": true,
+    "scopes": [
+      "openid",
+      "profile",
+      "email"
+    ],
+    "auth_methods": [
+      "authorization_code"
+    ]
+  }

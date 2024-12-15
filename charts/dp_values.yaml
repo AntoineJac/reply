@@ -1,0 +1,174 @@
+image:
+  repository: kong/kong-gateway
+  tag: "3.4.3.10"
+  pullPolicy: Always
+
+replicaCount: 1
+
+# deployment:
+#   hostNetwork: true
+# dnsPolicy: ClusterFirstWithHostNet
+
+# affinity:
+#   podAntiAffinity:
+#     requiredDuringSchedulingIgnoredDuringExecution:
+#       - labelSelector:
+#           matchExpressions:
+#             - key: app
+#               operator: In
+#               values:
+#                 - kong-enterprise-data-plane-kong
+#         topologyKey: "kubernetes.io/hostname"
+
+deployment:
+  serviceAccount:
+    create: true
+    name: antoine-test
+    automountServiceAccountToken: true
+
+  # initContainers:
+  # - name: create-aws-credentials
+  #   image: gcr.io/cloud-builders/kubectl:latest
+  #   volumeMounts:
+  #   - name: shared-data
+  #     mountPath: /pod-data
+  #   command: 
+  #     - /bin/bash
+  #     - -c
+  #     - |
+  #       apt-get update; apt-get install unzip; apt-get install curl;
+  #       BLABLABLA
+  #       sleep 1;
+
+customEnv:
+  HOST_IP:
+    valueFrom:
+      fieldRef:
+        fieldPath: status.hostIP
+  OTEL_EXPORTER_OTLP_ENDPOINT:
+    value: "$(HOST_IP):4318"
+  AWS_REGION: 'neverRead'
+  AWS_ACCESS_KEY_ID: myaccesskey
+  AWS_SECRET_ACCESS_KEY: mysecretkey
+  AWS_CONFIG_STORAGE_ENDPOINT: http://miniobackup.mt:9000
+
+env:
+  database: "off"
+  role: data_plane
+  # Communication to push config to data-plane (wss)
+  cluster_control_plane: kongcp-kong-cluster.cp.svc.cluster.local:8005
+  #wss.stargate.starsweb.io
+  # Communication to push vitals to control plane
+  cluster_telemetry_endpoint: kongcp-kong-clustertelemetry.cp.svc.cluster.local:8006
+  # Certificates for cluster communication
+  lua_ssl_trusted_certificate: system, /etc/secrets/kong-dp-cert/ca.crt
+  untrusted_lua_sandbox_requires: cjson.safe, resty.http, resty.aws, pl.utils, kong.tools.utils
+  nginx_worker_processes: "2"
+  lua_ssl_verify_depth: 2
+  log_level: debug
+  opentelemetry_tracing: all
+  opentelemetry_tracing_sampling_rate: "1"
+  tracing_instrumentations: all
+  tracing_sampling_rate: 1
+  # stream_listen: 0.0.0.0:9000 ssl
+  untrusted_lua: "on"
+  vitals: off
+
+  plugins: bundled # rate-limiting-advanced-by-size, oas-validation, mocking, path-rewriter-migration, health-check-bypass, partner-mediation, strip-prefix, auth-mediation-v1
+  CLUSTER_FALLBACK_CONFIG_EXPORT: "on"
+  CLUSTER_FALLBACK_CONFIG_STORAGE: s3://test-antoine/test-prefix
+
+  cluster_mtls: "pki"
+  cluster_cert: /etc/secrets/kong-dp-cert/tls.crt
+  cluster_cert_key: /etc/secrets/kong-dp-cert/tls.key
+  cluster_ca_cert: /etc/secrets/kong-dp-cert/ca.crt
+  cluster_server_name: wss.stargate.starsweb.io
+  ANTOINE_TEST_ENDPONT_1: http://webhook.site/7d3dc302-a136-4dad-bd70-f927a5f6e7e8/test2
+  ssl_cert: /etc/secrets/kong-dp-cert/tls.crt
+  ssl_cert_key: /etc/secrets/kong-dp-cert/tls.key
+
+
+secretVolumes:
+  - kong-dp-cert
+  # - kong-ca-cert
+  # - kong-ssl-cert
+
+# plugins:
+#   configMaps:
+#   - pluginName: rate-limiting-advanced-by-size
+#     name: rate-limiting-advanced-by-size
+
+
+proxy:
+  enabled: true
+  type: LoadBalancer
+  
+  http:
+    enabled: true
+    servicePort: 8000
+    containerPort: 8000
+    parameters:
+      - reuseport
+  tls:
+    enabled: true
+    servicePort: 8443
+    containerPort: 8443
+    parameters:
+      - http2
+
+  labels:
+    enable-metrics: "true"
+
+podAnnotations:
+  metrics.dynatrace.com/scrape: 'true'
+  metrics.dynatrace.com/path: '/metrics'
+  metrics.dynatrace.com/port: '8100'
+  metrics.dynatrace.com/secure: 'false'
+
+admin:
+  enabled: false
+
+portal:
+  enabled: false
+
+portalapi:
+  enabled: false
+
+manager:
+  enabled: false
+
+ingressController:
+  enabled: false
+
+enterprise:
+  enabled: true
+  license_secret: kong-enterprise-license
+  vitals:
+    enabled: true
+
+status:
+  enabled: true
+  http:
+    enabled: true
+    containerPort: 8100
+  tls:
+    containerPort: 8543
+    enabled: false
+
+# only if pod not enough to initiate
+readinessProbe:
+  initialDelaySeconds: 20
+
+livenessProbe:
+  initialDelaySeconds: 20
+
+# extraObjects:
+# - apiVersion: v1
+#   kind: Secret
+#   metadata:
+#     name: antoine-config
+#   data:
+#     AWS_ACCESS_KEY_ID: xxxx
+#     AWS_SESSION_TOKEN: xxxx
+#     AWS_SECRET_ACCESS_KEY: xxxx
+

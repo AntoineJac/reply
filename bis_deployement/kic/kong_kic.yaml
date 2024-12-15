@@ -1,0 +1,66 @@
+
+controller:
+  proxy:
+    nameOverride: "{{ .Release.Name }}-gateway-proxy"
+  enabled: true
+  deployment:
+    kong:
+      enabled: false
+  ingressController:
+    enabled: true
+    env:
+      feature_gates: GatewayAlpha=true,RewriteURIs=true
+    gatewayDiscovery:
+      enabled: true
+      generateAdminApiService: true
+    image:
+      repository: kong/kubernetes-ingress-controller
+      tag: "3.3.1"
+
+gateway:
+  enabled: true
+  deployment:
+    kong:
+      enabled: true
+  admin:
+    enabled: true
+    http:
+      enabled: true
+      servicePort: 7001
+      containerPort: 8001
+    type: ClusterIP
+  image:
+    repository: kong/kong-gateway
+    tag: "3.4.3.10"
+  ingressController:
+    enabled: false
+  manager:
+    annotations:
+      konghq.com/protocol: http
+    enabled: true
+    http:
+      containerPort: 7002
+      enabled: true
+      servicePort: 8002
+    type: LoadBalancer
+  proxy:
+    annotations:
+      prometheus.io/port: "9542"
+      prometheus.io/scrape: "true"
+    enabled: true
+    http:
+      containerPort: 8080
+      enabled: true
+      hostPort: 80
+      servicePort: 7000
+    type: LoadBalancer
+  env:
+    database: "off"
+    anonymous_reports: "off"
+    admin_gui_api_url: http://localhost:7001
+    LICENSE_DATA:
+      valueFrom:
+        secretKeyRef:
+          name: kong-enterprise-license
+          key: license
+

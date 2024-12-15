@@ -1,0 +1,117 @@
+# This is a basic workflow to help you get started with Actions
+
+name: CI
+
+# Controls when the action will run. 
+on:
+  # Triggers the workflow on push or pull request events but only for the main branch
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+    branches:
+     - main
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+env:
+    KONG_PROXY_URL: http://httpbin.org/anything
+    KONG_TOKEN: ${{ secrets.KONG_TOKEN }}
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  deploy-customer-api:
+    name: Check Customer API and prepare deployement to Gateway
+    runs-on: [macos-latest]
+    defaults:
+        run:
+          working-directory: ./kong
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+      #Installing the deck and schemathesis cli
+      - name: Install NodeJS
+        uses: actions/setup-node@v4
+        with:
+            node-version: '20'
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+            python-version: '3.12' 
+      - name: Install Deck  
+        run: |
+          brew tap kong/deck
+          brew install deck
+      - name: Install schemathesis
+        run: python -m pip install schemathesis
+
+      # Check current OpenApi
+      - name: Call current openapi file and test api service
+        run: |
+          SERVER_URL=$(yq e '.servers[0].url' openapi.yaml)
+          st run --checks all --validate-schema True -D all --experimental openapi-3.1 \
+            -H Authorization:blabla -b $SERVER_URL \
+            --hypothesis-phases=explicit -v openapi.yaml
+
+      # Check current OpenApi ling
+      - name: Call current openapi file and test api service
+        run: deck file lint -s openapi.yaml rulesets-oas.yaml
+
+      # Convert OpenApi into Kong file
+      - name: Generate declarative config
+        run: |
+          deck file openapi2kong -s openapi.yaml -o kong.yaml
+
+      # Replace the service name in plugins
+      - name: Replace the service name in plugins
+        run: |
+          SERVICE_NAME=$(yq e '.services[].name' kong.yaml)
+          for yamlfile in plugins/*.yaml; do
+            deck file patch -s "$yamlfile" -o "$yamlfile" --selector '$..plugins[*]' --value 'service: "'$SERVICE_NAME'"'
+          done
+
+      # Combines all configuration files into one Kong file
+      - name: Generate declarative config
+        run: |
+          deck file render kong.yaml ./plugins -o kong.yaml
+          cat kong.yaml
+
+      # Validate Kong Spec
+      - name: Validate Kong configuration file
+        run: deck file validate kong.yaml
+
+      # Kong Spec linting and ruleset
+      - name: Validate Kong configuration file against linting ruleset
+        run: deck file lint -s kong.yaml rulesets-kong.yaml
+      
+    #   # Validate Kong Spec again Gateway
+    #   - name: Validate Kong configuration file against Kong Gateway
+    #     run: deck gateway validate kong.yaml \
+    #         --konnect-addr https://eu.api.konghq.com --konnect-token $KONG_TOKEN --konnect-control-plane-name Aviva
+
+      # Performs a diff with the entities in local files
+      - id: kongtestreport
+        name: Performs a diff
+        run: |
+            SERVICE_NAME=$(yq e '.services[].name' kong.yaml)
+            echo $SERVICE_NAME
+            deck gateway diff kong.yaml \
+                --konnect-addr https://eu.api.konghq.com --konnect-token $KONG_TOKEN --konnect-control-plane-name Aviva --select-tag $SERVICE_NAME  >> out.txt
+            echo 'KONG_REPORT<<EOF' > $GITHUB_OUTPUT
+            cat out.txt >> $GITHUB_OUTPUT
+            echo 'EOF' >> $GITHUB_OUTPUT
+      
+      # Add the comment to the PR
+      - name: Add the comment to the PR
+        uses: actions/github-script@v6
+        env:
+            KONG_REPORT: ${{ steps.kongtestreport.outputs.KONG_REPORT }}
+        with:
+            github-token: ${{ github.token }}
+            script: |
+                github.rest.issues.createComment({
+                    issue_number: context.issue.number,
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    body: process.env.KONG_REPORT
+                })
+      

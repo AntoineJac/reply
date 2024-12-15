@@ -1,0 +1,141 @@
+alertmanager:
+  enabled: false
+prometheus:
+  enabled: true
+  prometheusSpec:
+    alertingEndpoints:
+      - name: alertmanager-operated
+        namespace: mt
+        port: web
+loki:
+  enabled: false
+grafana:
+  enabled: true
+  defaultDashboardsEnabled: true # true
+  # serviceMonitor:
+  #   enabled: true
+  #   path: "/metrics"
+  #   labels: {}
+  #   interval: ""
+  #   scheme: http
+  #   tlsConfig: {}
+  #   scrapeTimeout: 30s
+  adminPassword: password
+  service:
+    type: LoadBalancer
+    port: 3000
+    targetPort: 3000
+  sidecar:
+    datasources:
+      enabled: true
+      defaultDatasourceEnabled: true
+      searchNamespace: ALL
+      isDefaultDatasource: true
+      uid: prometheus
+      label: grafana_datasource
+      labelValue: "1"
+  additionalDataSources:
+    - name: Loki
+      type: loki
+      url: http://loki.mt:3100
+    - name: Jaeger
+      type: jaeger
+      url: http://jaeger-query:16686
+    - name: Prometheusdp
+      type: prometheus
+      uid: prometheusdp
+      url: http://prometheus-operated.dp.svc.cluster.local:9090
+      access: proxy
+    - name: Alertmanager
+      type: alertmanager
+      uid: alertmanagerdp
+      jsonData:
+        implementation: prometheus
+      url: http://alertmanager-operated:9093
+      access: proxy
+  dashboardProviders:
+    dashboardproviders.yaml:
+      apiVersion: 1
+      providers:
+      - name: 'default'
+        orgId: 1
+        folder: ''
+        type: file
+        disableDeletion: false
+        editable: false
+        options:
+          path: /var/lib/grafana/dashboards/default
+  alerting:
+    # rules.yaml:
+    #   apiVersion: 1
+    #   groups:
+    #     - orgId: 1
+    #       name: test
+    #       folder: my_first_folder
+    #       interval: 60s
+    #       rules:
+    #         - uid: my_id_1
+    #           title: kong_httpNon2xxCountTooHigh
+    #           condition: A
+    #           data:
+    #             - refId: A
+    #               datasourceUid: '-100'
+    #               model:
+    #                 conditions:
+    #                   - evaluator:
+    #                       params:
+    #                         - 3
+    #                       type: gt
+    #                     operator:
+    #                       type: and
+    #                     query:
+    #                       params:
+    #                         - A
+    #                     reducer:
+    #                       type: last
+    #                     type: query
+    #                 datasource:
+    #                   type: __expr__
+    #                   uid: '-100'
+    #                 expression: kong_http_requests_total{code!~"200"}
+    #                 intervalMs: 1000
+    #                 maxDataPoints: 43200
+    #                 refId: A
+    #                 type: math
+    #           dashboardUid: my_dashboard
+    #           panelId: 123
+    #           noDataState: Alerting
+    #           for: 60s
+    #           annotations:
+    #             some_key: some_value
+    #           labels:
+    #             team: sre_team_1
+    contactpoints.yaml:
+      apiVersion: 1
+      contactPoints:
+      - name: 'grafana-default-webhook'
+        orgId: 1
+        receivers:
+          - uid: 'yUGtJnT4k'
+            type: webhook
+            settings:
+              url: 'https://webhook.site/7d3dc302-a136-4dad-bd70-f927a5f6e7e8'
+    policies.yaml:
+      apiVersion: 1
+      policies:
+      - orgId: 1
+        receiver: grafana-default-webhook
+        group_by: ['...']
+        group_wait: 30s
+        group_interval: 5m
+        repeat_interval: 4h
+
+  #dashboards:
+  #  default:
+  #    kong-dash:
+  #      gnetId: 7424
+  #     revision: 9
+  #      datasource: Prometheus
+
+
+
