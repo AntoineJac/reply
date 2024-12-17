@@ -12,8 +12,8 @@ module "control_planes" {
   environment = var.environment
 }
 
-module "teams" {
-  source         = "./modules/teams"
-  environment    = var.environment
-  control_planes = module.control_planes.control_planes
-}
+# module "teams" {
+#   source         = "./modules/teams"
+#   environment    = var.environment
+#   control_planes = module.control_planes.control_planes
+# }
