@@ -1,6 +1,6 @@
 plugins:
 - name: key-auth
- service: SERVICE_NAME|ID
- config:
-   key_names:
-   - apikey
+  service: SERVICE_NAME|ID
+  config:
+    key_names:
+    - apikey
