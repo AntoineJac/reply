@@ -41,12 +41,12 @@ deployment:
   #       sleep 1;
 
 customEnv:
-  HOST_IP:
-    valueFrom:
-      fieldRef:
-        fieldPath: status.hostIP
-  OTEL_EXPORTER_OTLP_ENDPOINT:
-    value: "$(HOST_IP):4318"
+  # HOST_IP:
+  #   valueFrom:
+  #     fieldRef:
+  #       fieldPath: status.hostIP
+  # OTEL_EXPORTER_OTLP_ENDPOINT:
+  #   value: "$(HOST_IP):4318"
   AWS_REGION: 'neverRead'
   AWS_ACCESS_KEY_ID: myaccesskey
   AWS_SECRET_ACCESS_KEY: mysecretkey
@@ -57,7 +57,6 @@ env:
   role: data_plane
   # Communication to push config to data-plane (wss)
   cluster_control_plane: kongcp-kong-cluster.cp.svc.cluster.local:8005
-  #wss.stargate.starsweb.io
   # Communication to push vitals to control plane
   cluster_telemetry_endpoint: kongcp-kong-clustertelemetry.cp.svc.cluster.local:8006
   # Certificates for cluster communication
@@ -82,8 +81,7 @@ env:
   cluster_cert: /etc/secrets/kong-dp-cert/tls.crt
   cluster_cert_key: /etc/secrets/kong-dp-cert/tls.key
   cluster_ca_cert: /etc/secrets/kong-dp-cert/ca.crt
-  cluster_server_name: wss.stargate.starsweb.io
-  ANTOINE_TEST_ENDPONT_1: http://webhook.site/7d3dc302-a136-4dad-bd70-f927a5f6e7e8/test2
+  cluster_server_name: wss.company.io
   ssl_cert: /etc/secrets/kong-dp-cert/tls.crt
   ssl_cert_key: /etc/secrets/kong-dp-cert/tls.key
 

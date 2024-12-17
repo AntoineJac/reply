@@ -119,7 +119,7 @@ grafana:
           - uid: 'yUGtJnT4k'
             type: webhook
             settings:
-              url: 'https://webhook.site/7d3dc302-a136-4dad-bd70-f927a5f6e7e8'
+              url: 'https://example-url.com'
     policies.yaml:
       apiVersion: 1
       policies:

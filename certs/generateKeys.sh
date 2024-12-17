@@ -19,7 +19,7 @@ basicConstraints=CA:FALSE
 keyUsage = digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment
 subjectAltName = @alt_names
 [alt_names]
-DNS.1 = wss.stargate.starsweb.io
+DNS.1 = wss.company.io
 EOF
 
 openssl x509 -req -in control-plane.csr -CA ../ca_cert/ca-cert.pem -CAkey ../ca_cert/ca-cert.key -CAcreateserial \

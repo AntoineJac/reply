@@ -9,7 +9,6 @@ customEnv:
   AWS_SECRET_ACCESS_KEY: mysecretkey
   AWS_CONFIG_STORAGE_ENDPOINT: http://miniobackup.mt:9000
 
-
 env:
   database: "postgres"
   pg_host: kongpg-postgresql.pg.svc.cluster.local
@@ -20,16 +19,15 @@ env:
       secretKeyRef:
         name: kong-enterprise-postgres-password
         key: password
-  #admin_api_uri: https://api.manager.stargate.starsweb.io
-  #admin_gui_url: https://manager.stargate.starsweb.io
-  portal_api_url: http://localhost:8004 #https://api.stargate.starsweb.io
+  #admin_api_uri: https://api.manager.company.io
+  #admin_gui_url: https://manager.company.io
+  portal_api_url: http://localhost:8004 #https://api.company.io
   portal_gui_protocol: http
-  portal_gui_host: localhost:8003 #portal.stargate.starsweb.io
+  portal_gui_host: localhost:8003 #portal.company.io
   portal_cors_origins: "*"
-  portal_and_vitals_key: d2cb4be4f720c007d40ebdd6e750324a9e1019e542f97be964c31f8e86ccb8f6
   #portal_app_auth: external-oauth2
 
-  plugins: bundled #rate-limiting-advanced-by-size, oas-validation, mocking, path-rewriter-migration, health-check-bypass, partner-mediation, strip-prefix, auth-mediation-v1, soap-xml-request-handling,soap-xml-response-handling,oauth-introspection,token-mediation,token-claim-append
+  plugins: bundled #rate-limiting-advanced-by-size
   CLUSTER_FALLBACK_CONFIG_EXPORT: "on"
   CLUSTER_FALLBACK_CONFIG_STORAGE: s3://test-antoine/test-prefix
 
@@ -54,7 +52,7 @@ env:
   cluster_ca_cert: /etc/secrets/kong-cp-cert/ca.crt
   ssl_cert: /etc/secrets/kong-cp-cert/tls.crt
   ssl_cert_key: /etc/secrets/kong-cp-cert/tls.key
-  cluster_allowed_common_names: wss.stargate.starsweb.io, api.stargate.starsweb.io
+  cluster_allowed_common_names: wss.company.io, api.company.io
 
   anonymous_reports: "off"
   untrusted_lua: "on"

@@ -11,8 +11,7 @@ kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/downloa
 kubectl apply -f bis_deployement/kic/kic_config.yaml 
 
 
-kubectl apply -f https://docs.konghq.com/assets/kubernetes-ingress-controller/examples/echo-service.yaml
-
+kubectl apply -f https://docs.konghq.com/assets/kubernetes-ingress-controller/examples/echo-service.yaml => create echo service 
 
 
 echo "
@@ -29,7 +28,7 @@ spec:
  - matches:
    - path:
        type: PathPrefix
-       value: /echo
+       value: /echoreply
    backendRefs:
    - name: echo
      kind: Service

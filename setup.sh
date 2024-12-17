@@ -99,7 +99,7 @@ kubectl apply -f monitoring.yaml
 sleep 10
 kubectl expose service prometheus-operated --name prometheus-operated-lb -n dp
 
-export JAEGER_URL=$(kubectl get svc jaeger-query -o jsonpath='{.status.loadBalancer.ingress[].ip}')
+export JAEGER_URL=$(kubectl get svc jaeger-query -o jsonpath='{.status.loadBalancer.ingress[].ip}' -n mt)
 echo Jaeger URL: http://$JAEGER_URL:16686
 
-#deck sync -s kong.yaml
+deck sync -s kong.yaml

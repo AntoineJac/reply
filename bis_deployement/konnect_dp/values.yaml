@@ -12,10 +12,10 @@ env:
   role: data_plane
   database: "off"
   cluster_mtls: pki
-  cluster_control_plane: f095a80338.eu.cp0.konghq.com:443
-  cluster_server_name: f095a80338.eu.cp0.konghq.com
-  cluster_telemetry_endpoint: f095a80338.eu.tp0.konghq.com:443
-  cluster_telemetry_server_name: f095a80338.eu.tp0.konghq.com
+  cluster_control_plane: "{KONNECT_CP_URL:PORT}"
+  cluster_server_name: "{KONNECT_CP_URL}"
+  cluster_telemetry_endpoint: "{KONNECT_CP_URL:PORT}"
+  cluster_telemetry_server_name: "{KONNECT_CP_URL}"
   cluster_cert: /etc/secrets/kong-cluster-cert/tls.crt
   cluster_cert_key: /etc/secrets/kong-cluster-cert/tls.key
   lua_ssl_trusted_certificate: system

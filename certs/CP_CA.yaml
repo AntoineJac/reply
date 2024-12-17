@@ -18,7 +18,7 @@ spec:
       - jetstack
   # The use of the common name field has been deprecated since 2000 and is
   # discouraged from being used.
-  commonName: wss.stargate.starsweb.io
+  commonName: wss.company.io
   isCA: false
   privateKey:
     algorithm: RSA
@@ -29,9 +29,9 @@ spec:
     - client auth
   # At least one of a DNS Name, URI, or IP address is required.
   dnsNames:
-    - wss.stargate.starsweb.io
-    - api.stargate.starsweb.io
-    - stargate.starsweb.io
+    - wss.company.io
+    - api.company.io
+    - company.io
     - localhost.com
     - localhost
     - kongdp-kong-proxy.dp.svc.cluster.local
@@ -42,7 +42,7 @@ spec:
   #  - 192.168.0.5
   # Issuer references are always required.
   issuerRef:
-    name: starsgroup-ca-issuer
+    name: company-ca-issuer
     #name: pca-cluster-issuer-rsa
     # We can reference ClusterIssuers by changing the kind here.
     # The default value is Issuer (i.e. a locally namespaced Issuer)

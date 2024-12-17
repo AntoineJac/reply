@@ -68,16 +68,16 @@ jobs:
         run: |
           SERVICE_NAME=$(yq e '.services[].name' kong.yaml)
           deck gateway dump -o backupSpec.yaml \
-            --konnect-addr https://eu.api.konghq.com --konnect-token $KONG_TOKEN --konnect-control-plane-name Aviva --select-tag $SERVICE_NAME
+            --konnect-addr https://eu.api.konghq.com --konnect-token $KONG_TOKEN --konnect-control-plane-name testCP --select-tag $SERVICE_NAME
 
       # Ping the Kong instance
       # Sync to Kong
       - name: Update Kong Config
         run: |
           SERVICE_NAME=$(yq e '.services[].name' kong.yaml)
-          deck gateway ping --konnect-addr https://eu.api.konghq.com --konnect-token $KONG_TOKEN --konnect-control-plane-name Aviva
+          deck gateway ping --konnect-addr https://eu.api.konghq.com --konnect-token $KONG_TOKEN --konnect-control-plane-name testCP
           deck gateway sync kong.yaml \
-            --konnect-addr https://eu.api.konghq.com --konnect-token $KONG_TOKEN --konnect-control-plane-name Aviva --select-tag $SERVICE_NAME
+            --konnect-addr https://eu.api.konghq.com --konnect-token $KONG_TOKEN --konnect-control-plane-name testCP --select-tag $SERVICE_NAME
 
       # Replace the server url in openapi spec and wait for Kong config to sync up
       - name: Replace the server url
@@ -98,5 +98,5 @@ jobs:
         run: |
           SERVICE_NAME=$(yq e '.services[].name' kong.yaml)
           deck gateway sync backupSpec.yaml \
-            --konnect-addr https://eu.api.konghq.com --konnect-token $KONG_TOKEN --konnect-control-plane-name Aviva --select-tag $SERVICE_NAME
+            --konnect-addr https://eu.api.konghq.com --konnect-token $KONG_TOKEN --konnect-control-plane-name testCP --select-tag $SERVICE_NAME
 

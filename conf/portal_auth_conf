@@ -6,11 +6,11 @@
         "id"
     ],
     "client_secret": [
-        "jBbbo02IbC8P4-GRiaG6M_xmVwLJQECYghcITMbZ"
+        "xxxxx"
     ],
     "ssl_verify": false,
     "logout_query_arg": "logout",
-    "issuer": "https://trial-7519371.okta.com/oauth2/default/.well-known/oauth-authorization-server",
+    "issuer": "https://issuer.com/.well-known/oauth-authorization-server",
     "leeway": 100,
     "login_redirect_mode": "query",
     "scopes": [
@@ -27,7 +27,7 @@
         "http://localhost:8003/default"
     ],
     "client_id": [
-        "0oa3uk92qnCAg612k697"
+        "xxxxx"
     ],
     "consumer_claim": [
         "email"

@@ -17,13 +17,13 @@ controller:
       repository: kong/kubernetes-ingress-controller
       tag: "3.3.1"
 
-    konnect:
-      license:
-        enabled: true
-      enabled: true
-      controlPlaneID: "a651b288-d055-4be8-806b-1e229c07452d"
-      tlsClientCertSecretName: konnect-client-tls
-      apiHostname: "eu.kic.api.konghq.com"
+    # konnect:
+    #   license:
+    #     enabled: true
+    #   enabled: true
+    #   controlPlaneID: "{KONNECT_CP_ID}"
+    #   tlsClientCertSecretName: konnect-client-tls
+    #   apiHostname: "eu.kic.api.konghq.com"
 
 gateway:
   enabled: true

@@ -1,0 +1,7 @@
+plugins:
+- name: opentelemetry
+  config:
+    traces_endpoint: http://opentelemetry.collector:4318/v1/traces
+    logs_endpoint: http://opentelemetry.collector:4318/v1/logs
+    headers:
+      X-Auth-Token: secret-token

@@ -1,11 +1,11 @@
 {
-    "issuer": "https://trial-1116640.okta.com/oauth2/default/.well-known/oauth-authorization-server",
+    "issuer": "https://issuer.com/.well-known/oauth-authorization-server",
     "admin_claim": "email",
     "client_id": [
-      "0oam65xbdqe2om5p8697"
+      "xxxxx"
     ],
     "client_secret": [
-      "4IVB_Iq7OShLiCEf5t-Xa67d_V4WKgamE1zgO_CJLSoljUmaWwsWQNPLJrbYLPbf"
+      "xxxxx"
     ],
     "ssl_verify": false,
     "leeway": 60,

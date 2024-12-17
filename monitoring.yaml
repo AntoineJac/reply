@@ -183,11 +183,11 @@ spec:
   receivers:
   - name: 'webhookantoine'
     webhookConfigs:
-    - url: 'http://webhook.site/7d3dc302-a136-4dad-bd70-f927a5f6e7e8'
+    - url: 'http://example-url.com'
       sendResolved: true
   - name: 'nodeantoine'
     webhookConfigs:
-    - url: 'http://webhook.site/7d3dc302-a136-4dad-bd70-f927a5f6e7e8'
+    - url: 'http://example-url.com'
       sendResolved: true
   - name: 'default'
 

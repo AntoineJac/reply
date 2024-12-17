@@ -1,12 +1,3 @@
-variable "openshift-project-enable-edit-group" {
-  type    = bool
-  default = true
-}
-
-variable "openshift-base-url" {
-  type = string
-}
-
 variable "kong-tls-crt" {
   type = string
 }
@@ -74,21 +65,6 @@ variable "additional-annotations" {
 variable "storage-class" {
   type    = string
   default = "nimble-hpe"
-}
-
-variable "openshift-project-admin-users" {
-  type    = list(string)
-  default = []
-}
-
-variable "openshift-project-edit-users" {
-  type    = list(string)
-  default = []
-}
-
-variable "openshift-project-view-users" {
-  type    = list(string)
-  default = []
 }
 
 variable "postgres-volume-size" {
